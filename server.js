@@ -1,39 +1,59 @@
 const express = require('express');
 const app = express();
-var port = process.env.PROD || 7000;
+const fs = require('fs');
+const mongoose = require('./db/mongoose');
+const { ObjectID } = require('mongodb')
+var port = process.env.PORT || 7000;
+var bodyParser = require('body-parser');
+var { Todos } = require('./models/Todos');
+//var { Users } = require('./models/Users');
 
-const mongoose = require('mongoose');
-mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost:27017/TodoApp', { useNewUrlParser: true });
-
-var TodoSchema = new mongoose.Schema({
-    text: {
-        type: String,
-        required: true,
-        minlength: 1,
-        trim: true
-    },
-    completed: {
-        type: Boolean,
-        default: false,
-    },
-    completedAt: {
-        type: String,
-        default: new Date().getHours() + ':' + new Date().getMinutes()
-    }
+app.use((req, res, next) => {
+    var now = new Date();
+    var log = `${now} - ${req.method} - ${req.url}\n`;
+    fs.appendFile('server.log', log, (err) => {
+        if (err)
+            return console.log('Unable to write to Server log file.')
+    })
+    next();
 })
-var TodoModel = mongoose.model('Todos', TodoSchema);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-var todo = new TodoModel({
-    text: '  take a nap   ',
-    //completed: true,
-    completedAt: "21:00"
+app.post('/todos', (req, res) => {
+    var todo = new Todos({ text: req.body.text });
+    // console.log(req.body);
+    todo.save()
+        .then((doc) => {
+            console.log('Successfully inserted todo data...' + doc)
+            res.send(doc)
+        })
+        .catch((err) => {
+            console.log('Error occurred while inserting: ' + err)
+            res.send(err)
+        })
+
 })
-
-todo.save()
-    .then((res) => console.log('Successfully inserted todo data...' + res))
-    .catch((err) => console.log('Error occurred while inserting: ' + err))
-
+app.get('/todos', (req, res) => {
+    Todos.find()
+        .then(todos => res.send({ todos }))
+        .catch(err => res.send('Error occurred while getting: ' + err))
+})
+app.get('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    if (!ObjectID.isValid(id))
+        return res.status(400).send('Invalid Id');
+    Todos.findById(id)
+        .then(doc => {
+            if (!doc)
+                return res.status(400).send('Id not found in DB')
+            else
+                res.send(doc);
+        })
+        .catch(err => res.status(400).send('Error while fetching' + err))
+})
 app.listen(port, () => {
     console.log('App is listening on ' + port)
 })
+
+module.exports = { app }
