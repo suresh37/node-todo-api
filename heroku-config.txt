@@ -1,0 +1,3 @@
+>heroku create
+
+>heroku addons:create mongolab:sandbox
