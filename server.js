@@ -77,9 +77,9 @@ app.delete('/todos/:id', (req, res) => {
 // path todo data
 app.patch('/todos/:id', (req, res) => {
     var id = req.params.id;
-    console.log(JSON.stringify(req.body, undefined, 2));
+    //console.log(JSON.stringify(req.body, undefined, 2));
     var body = _.pick(req.body, ['text', 'completed']);
-    console.log('Lodash Body: ' + JSON.stringify(body, undefined, 2));
+    // console.log('Lodash Body: ' + JSON.stringify(body, undefined, 2));
     if (!ObjectID.isValid(id))
         return res.status(400).send('Invalid ID');
     if (_.isBoolean(body.completed) && body.completed)
