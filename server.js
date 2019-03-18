@@ -8,7 +8,7 @@ const { ObjectID } = require('mongodb');
 var mongoose = require('./db/mongoose');
 var { Todos } = require('./models/Todos');
 var port = process.env.PORT || 7000;
-//var { Users } = require('./models/Users');
+var { Users } = require('./models/Users');
 
 //app.set('views', path.join(__dirname, 'views'))
 app.use(express.static('views'))
@@ -29,7 +29,11 @@ app.get('/', (req, res) => {
 })
 // post todos data
 app.post('/todos', (req, res) => {
-    var todo = new Todos({ text: req.body.text });
+    var todo = new Todos({
+        text: req.body.text,
+        completed: req.body.completed,
+        completedAt: req.body.completedAt
+    });
     // console.log(req.body);
     todo.save()
         .then((doc) => {
@@ -98,6 +102,33 @@ app.patch('/todos/:id', (req, res) => {
         .catch(err => res.status(400).send('Error while updating data ' + err))
 
 })
+//Users API
+//====================================================
+app.post('/users', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+    var user = new Users(body);
+    user.save()
+        .then(() => {
+            return user.genAuthToken();
+        })
+        .then((token) => {
+            console.log('Successfully inserted user data...' + user);
+            res.header('x-auth', token).send(user)
+        })
+        .catch(err => {
+            console.log('Error while saving user: ' + err);
+            res.status(400).send(err);
+        })
+})
+
+app.get('/users', (req, res) => {
+    Users.find()
+        .then(users => {
+            res.send(users);
+        })
+        .catch(err => res.status(400).send('Error while fetching users ' + err))
+})
+
 app.listen(port, () => {
     console.log('App is listening on ' + port)
 })

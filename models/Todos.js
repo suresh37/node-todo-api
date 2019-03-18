@@ -12,9 +12,17 @@ var TodoSchema = new mongoose.Schema({
     },
     completedAt: {
         type: String,
-        default: new Date().getHours() + ':' + new Date().getMinutes()
+        // default: new Date().getHours() + ':' + new Date().getMinutes()
     }
 })
+TodoSchema.pre('save', function (next) {
+    if (this.completed == true)
+        this.completedAt = new Date().getHours() + ':' + new Date().getMinutes()
+    else
+        this.completedAt = null;
+    next();
+});
+
 var TodoModel = mongoose.model('Todos', TodoSchema);
 
 module.exports = { Todos: TodoModel }
