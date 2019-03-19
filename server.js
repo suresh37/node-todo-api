@@ -9,7 +9,8 @@ var mongoose = require('./db/mongoose');
 var { Todos } = require('./models/Todos');
 var port = process.env.PORT || 7000;
 var { Users } = require('./models/Users');
-
+var { authenticate } = require('./middleware')
+var bcrypt = require('bcryptjs')
 //app.set('views', path.join(__dirname, 'views'))
 app.use(express.static('views'))
 app.use((req, res, next) => {
@@ -127,6 +128,30 @@ app.get('/users', (req, res) => {
             res.send(users);
         })
         .catch(err => res.status(400).send('Error while fetching users ' + err))
+})
+
+app.get('/users/me', authenticate, (req, res) => {
+
+    res.send(req.user);
+})
+app.get('/users/verify/', (req, res) => {
+    //var password = req.params.password;
+    var email = req.query.email;
+    var password = req.query.password;
+    //res.send(email + ' ' + password);
+    //console.log('User: ' + email + ' Password: ' + password);
+    Users.getHashPassword(email)
+        .then((user) => {
+            var hashPass = user.password;
+            var token = user.tokens[0].token;
+            console.log("Comparing " + password + " " + hashPass)
+            bcrypt.compare(password, hashPass)
+                .then(result => {
+                    //console.log(result);
+                    res.header('x-auth', token).send("Verification: " + result);
+                })
+        })
+        .catch(err => res.status(401).send(err))
 })
 
 app.listen(port, () => {
